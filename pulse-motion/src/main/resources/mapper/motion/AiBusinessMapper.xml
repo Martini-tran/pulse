@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tran.pulse.motion.chatbot.mapper.AiBusinessMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tran.pulse.common.domain.entity.AiBusiness">
+        <id column="business_id" property="businessId"/>
+        <result column="ai_model_id" property="aiModelId"/>
+        <result column="system" property="system"/>
+    </resultMap>
+
+    <!-- 查询单条 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT business_id, ai_model_id, `system`
+        FROM ai_business
+        WHERE business_id = #{businessId}
+    </select>
+
+    <!-- 查询全部 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT business_id, ai_model_id, `system`
+        FROM ai_business
+    </select>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tran.pulse.common.domain.entity.AiBusiness">
+        INSERT INTO ai_business (business_id, ai_model_id, `system`)
+        VALUES (#{businessId}, #{aiModelId}, #{system})
+    </insert>
+
+    <!-- 更新 -->
+    <update id="updateById" parameterType="com.tran.pulse.common.domain.entity.AiBusiness">
+        UPDATE ai_business
+        SET ai_model_id = #{aiModelId},
+            system = #{system}
+        WHERE business_id = #{businessId}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="deleteById" parameterType="string">
+        DELETE FROM ai_business WHERE business_id = #{businessId}
+    </delete>
+
+</mapper>

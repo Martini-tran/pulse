@@ -1,0 +1,57 @@
+server:
+  port: 10801
+  servlet:
+    context-path: /pulse
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://140.143.222.164:3306/pulse?useSSL=false&serverTimezone=UTC
+    username: appuser
+    password: luxq0801
+
+
+
+pulse:
+  web:
+    cors:
+      # 故意留空，触发 setAllowedOriginPatterns("*")
+      allowed-origins:
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: false   # 用通配时不要开凭证
+      max-age: 600
+  auth:
+    secret: Sfsafaf#trggs
+    expireTime: 300
+  cache:
+    mode: REDIS
+    redis:
+      host: 117.78.0.126
+      port: 6379
+      database: 0
+      password: pulseuk
+
+
+mybatis:
+  # 指定mapper xml文件位置
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  # 指定实体类包路径
+  type-aliases-package: com.*.*.**.domain
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 开启二级缓存
+    cache-enabled: true
+    # 日志实现
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+
+
+
+# 日志配置
+logging:
+  level:
+    com.tran.pulse.service.DataCleanupService: INFO
+    com.tran.pulse.service.CleanupTaskMonitorService: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tran.pulse.user.mapper.SysUserMapper">
+
+    <resultMap id="BaseResultMap" type="com.tran.pulse.common.domain.entity.SysUser">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="real_name" property="realName"/>
+        <result column="email" property="email"/>
+        <result column="phone" property="phone"/>
+        <result column="avatar" property="avatar"/>
+        <result column="status" property="status"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="login_count" property="loginCount"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, password, real_name, email, phone, avatar, status,last_login_time, login_count, is_deleted,created_by, updated_by, create_time, update_time
+    </sql>
+
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE username = #{username}
+    </select>
+
+    <select id="selectByUserEmail" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE email = #{email}
+    </select>
+
+
+    <select id="selectByUsernameOrEmail" resultType="com.tran.pulse.common.domain.entity.SysUser">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user WHERE username = #{username} or email = #{email}
+    </select>
+
+
+    <insert id="insertUserSelective"
+            parameterType="com.tran.pulse.common.domain.entity.SysUser"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO sys_user
+        <!-- 动态拼接列 -->
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="username != null">username,</if>
+            <if test="password != null">password,</if>
+            <if test="email != null">email,</if>
+            <if test="status != null">status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <!-- 动态拼接值 -->
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="username != null">#{username},</if>
+            <if test="password != null">#{password},</if>
+            <if test="email != null">#{email},</if>
+            <if test="status != null">#{status},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+
+    <update id="updateUserStatus">
+        UPDATE sys_user
+        SET status = #{status},
+            update_time = NOW()
+        WHERE id = #{userId}
+    </update>
+
+
+</mapper>

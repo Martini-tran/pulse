@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.tran.pulse.cache.configuration.CacheConfiguration,\
+com.tran.pulse.cache.configuration.RedisConfiguration

@@ -1,0 +1,158 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_REGISTRY = 'your-registry.com'
+        DOCKER_REPO = 'pulse'
+        K8S_NAMESPACE = 'pulse'
+        MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+    }
+    
+    tools {
+        maven 'Maven-3.8.4'
+        jdk 'JDK-8'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.BUILD_VERSION = sh(
+                        script: "echo '1.0.0.${BUILD_NUMBER}'",
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                sh 'mvn clean test'
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
+                    publishCoverage adapters: [
+                        jacocoAdapter('**/target/site/jacoco/jacoco.xml')
+                    ]
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+        
+        stage('Code Quality') {
+            parallel {
+                stage('SonarQube Analysis') {
+                    steps {
+                        withSonarQubeEnv('SonarQube') {
+                            sh 'mvn sonar:sonar'
+                        }
+                    }
+                }
+                stage('Security Scan') {
+                    steps {
+                        sh 'mvn org.owasp:dependency-check-maven:check'
+                    }
+                }
+            }
+        }
+        
+        stage('Build Docker Images') {
+            parallel {
+                stage('Build Manager Image') {
+                    steps {
+                        script {
+                            def managerImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_REPO}/pulse-manager:${BUILD_VERSION}", 
+                                "-f scripts/docker/Dockerfile.manager .")
+                            docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-registry-credentials') {
+                                managerImage.push()
+                                managerImage.push('latest')
+                            }
+                        }
+                    }
+                }
+                stage('Build App Image') {
+                    steps {
+                        script {
+                            def appImage = docker.build("${DOCKER_REGISTRY}/${DOCKER_REPO}/pulse-app:${BUILD_VERSION}", 
+                                "-f scripts/docker/Dockerfile.app .")
+                            docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-registry-credentials') {
+                                appImage.push()
+                                appImage.push('latest')
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Dev') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                script {
+                    kubernetesDeploy(
+                        configs: 'scripts/k8s/dev/*.yaml',
+                        kubeconfigId: 'k8s-dev-config'
+                    )
+                }
+            }
+        }
+        
+        stage('Deploy to Staging') {
+            when {
+                branch 'release/*'
+            }
+            steps {
+                script {
+                    kubernetesDeploy(
+                        configs: 'scripts/k8s/staging/*.yaml',
+                        kubeconfigId: 'k8s-staging-config'
+                    )
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                input message: 'Deploy to production?', ok: 'Deploy'
+                script {
+                    kubernetesDeploy(
+                        configs: 'scripts/k8s/prod/*.yaml',
+                        kubeconfigId: 'k8s-prod-config'
+                    )
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            emailext (
+                subject: "✅ Build Success: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                body: "Build completed successfully. Version: ${BUILD_VERSION}",
+                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            )
+        }
+        failure {
+            emailext (
+                subject: "❌ Build Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
+                body: "Build failed. Please check the logs.",
+                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            )
+        }
+    }
+}

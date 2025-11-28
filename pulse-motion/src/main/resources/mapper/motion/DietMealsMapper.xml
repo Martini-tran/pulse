@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tran.pulse.motion.diet.mapper.DietMealsMapper">
+
+    <!-- 通用查询结果映射 DietMeals -->
+    <resultMap id="DietMealsResultMap" type="com.tran.pulse.common.domain.entity.DietMeals">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="mealDate" column="meal_date"/>
+        <result property="mealTime" column="meal_time"/>
+        <result property="textNote" column="text_note"/>
+        <result property="caloriesKcal" column="calories_kcal"/>
+        <result property="proteinG" column="protein_g"/>
+        <result property="carbsG" column="carbs_g"/>
+        <result property="fatG" column="fat_g"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updatedTime" column="updated_time"/>
+    </resultMap>
+
+    <!-- DTO 查询映射 MealDTO -->
+    <resultMap id="MealDTOResultMap" type="com.tran.pulse.motion.diet.domain.dto.MealDTO">
+        <id property="id" column="id"/>
+        <result property="date" column="meal_date"/>
+        <result property="time" column="meal_time"/>
+        <result property="text" column="text_note"/>
+        <result property="calories" column="calories_kcal"/>
+        <result property="protein" column="protein_g"/>
+        <result property="carbs" column="carbs_g"/>
+        <result property="fat" column="fat_g"/>
+    </resultMap>
+
+    <!-- 查询近期饮食记录 -->
+    <select id="selectDietMeals" resultMap="MealDTOResultMap">
+        SELECT id,
+               meal_date,
+               meal_time,
+               text_note,
+               calories_kcal,
+               protein_g,
+               carbs_g,
+               fat_g
+        FROM diet_meals
+        WHERE user_id = #{userId} AND meal_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY meal_date DESC, meal_time DESC
+    </select>
+
+    <!-- 添加饮食 -->
+    <insert id="addDietMeals" parameterType="com.tran.pulse.common.domain.entity.DietMeals" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO diet_meals (user_id, meal_date, meal_time, text_note,
+                                calories_kcal, protein_g, carbs_g, fat_g, created_time, updated_time)
+        VALUES (#{userId}, #{mealDate}, #{mealTime}, #{textNote},
+                #{caloriesKcal}, #{proteinG}, #{carbsG}, #{fatG},
+                NOW(), NOW())
+    </insert>
+
+    <!-- 修改饮食 -->
+    <update id="updateDietMeals" parameterType="com.tran.pulse.common.domain.entity.DietMeals">
+        UPDATE diet_meals
+        SET user_id       = #{userId},
+            meal_date     = #{mealDate},
+            meal_time     = #{mealTime},
+            text_note     = #{textNote},
+            calories_kcal = #{caloriesKcal},
+            protein_g     = #{proteinG},
+            carbs_g       = #{carbsG},
+            fat_g         = #{fatG},
+            updated_time  = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除饮食 -->
+    <delete id="deleteDietMeals" parameterType="string">
+        DELETE FROM diet_meals WHERE id = #{mealId}
+    </delete>
+
+
+    <!-- 根据ID查询饮食记录 -->
+    <select id="selectDietMealsById" resultMap="DietMealsResultMap">
+        SELECT id,
+               user_id,
+               meal_date,
+               meal_time,
+               text_note,
+               calories_kcal,
+               protein_g,
+               carbs_g,
+               fat_g,
+               created_time,
+               updated_time
+        FROM diet_meals
+        WHERE id = #{mealId}
+    </select>
+
+</mapper>

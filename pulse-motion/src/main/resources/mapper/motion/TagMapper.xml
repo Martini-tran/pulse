@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tran.pulse.motion.tag.mapper.TagMapper">
+
+    <!-- TagDefinition 结果映射 -->
+    <resultMap id="TagDefinitionResultMap" type="com.tran.pulse.common.domain.entity.TagDefinition">
+        <id column="tag_code" property="tagCode" jdbcType="VARCHAR"/>
+        <result column="display_name" property="displayName" jdbcType="VARCHAR"/>
+        <result column="ui_config" property="uiConfig" jdbcType="VARCHAR"/>
+        <result column="unit" property="unit" jdbcType="VARCHAR"/>
+        <result column="category_code" property="categoryCode" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="field_type" property="fieldType" jdbcType="VARCHAR"/>
+        <result column="is_required" property="isRequired" jdbcType="TINYINT"/>
+        <result column="sort_order" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="TINYINT"/>
+        <result column="created_time" property="createdTime" jdbcType="TIMESTAMP"/>
+        <result column="updated_time" property="updatedTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- TagCategoryDto 结果映射 -->
+    <resultMap id="TagCategoryDtoResultMap" type="com.tran.pulse.motion.tag.domian.dto.TagCategoryDto">
+        <result column="category_name" property="categoryName" jdbcType="VARCHAR"/>
+        <collection property="tagDefinition" ofType="com.tran.pulse.common.domain.entity.TagDefinition" resultMap="TagDefinitionResultMap">
+        </collection>
+    </resultMap>
+
+    <!-- 根据分类代码查询标签 -->
+    <select id="getTagsByCategoryCode" parameterType="java.lang.String" resultMap="TagDefinitionResultMap">
+        SELECT
+            tag_code,
+            display_name,
+            ui_config,
+            unit,
+            category_code,
+            description,
+            field_type,
+            is_required,
+            sort_order,
+            status,
+            created_time,
+            updated_time
+        FROM tag_definition
+        WHERE category_code = #{categoryCode}
+          AND status = 1
+        ORDER BY sort_order ASC, tag_code ASC
+    </select>
+
+    <!-- 根据分类代码列表获取标签分类DTO -->
+    <select id="getTagCategoryDtoByCategoryCodes" parameterType="java.util.List" resultMap="TagCategoryDtoResultMap">
+        SELECT
+        tc.category_name,
+        td.tag_code,
+        td.display_name,
+        td.ui_config,
+        td.unit,
+        td.category_code,
+        td.description,
+        td.field_type,
+        td.is_required,
+        td.sort_order,
+        td.status,
+        td.created_time,
+        td.updated_time
+        FROM tag_category tc
+        LEFT JOIN tag_definition td ON tc.category_code = td.category_code
+        WHERE tc.category_code IN
+        <foreach collection="list" item="categoryCode" open="(" separator="," close=")">
+            #{categoryCode}
+        </foreach>
+        AND tc.status = 1
+        AND (td.status = 1 OR td.status IS NULL)
+        ORDER BY tc.category_code, td.sort_order ASC, td.tag_code ASC
+    </select>
+
+</mapper>

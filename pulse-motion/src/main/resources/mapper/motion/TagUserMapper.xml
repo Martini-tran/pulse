@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tran.pulse.motion.tag.mapper.TagUserMapper">
+
+    <!-- 公共列片段，便于复用 -->
+    <sql id="Base_Column_List">
+        tag_code, user_id, tag_value, created_time, updated_time
+    </sql>
+
+    <!-- 建议使用 resultMap，避免处处写别名 -->
+    <resultMap id="TagUserMap" type="com.tran.pulse.common.domain.entity.TagUser">
+        <id     column="tag_code"     property="tagCode"/>
+        <id     column="user_id"      property="userId"/>
+        <result column="tag_value"    property="tagValue"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <!-- 批量 upsert：tag_code + user_id 唯一键；更新值与时间戳 -->
+    <insert id="addUserTags" parameterType="map">
+        INSERT INTO tag_user (tag_code, user_id, tag_value, updated_time)
+        VALUES
+        <foreach collection="tagDtos" item="tag" separator=",">
+            (#{tag.tagCode}, #{userId}, #{tag.tagValue}, NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        tag_value = VALUES(tag_value),
+        updated_time = VALUES(updated_time)
+    </insert>
+
+    <!-- 仅“打标签/触达”场景：没有值，仅更新时间；避免重复插入 -->
+    <insert id="addUserSimpleTags" parameterType="map">
+        INSERT INTO tag_user (tag_code, user_id, updated_time)
+        VALUES
+        <foreach collection="tagDtos" item="tag" separator=",">
+            (#{tag}, #{userId}, NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        updated_time = VALUES(updated_time)
+    </insert>
+
+    <!-- 获取用户的所有标签（按更新时间倒序更贴近日常需求） -->
+    <select id="getUserTags" resultMap="TagUserMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tag_user
+        WHERE user_id = #{userId}
+        ORDER BY updated_time DESC
+    </select>
+
+
+    <!-- 删除指定标签 -->
+    <delete id="deleteUserTag">
+        DELETE FROM tag_user
+        WHERE user_id = #{userId} AND tag_code = #{tagCode}
+    </delete>
+
+    <!-- 批量删除多个标签（新增） -->
+    <delete id="deleteUserTags" parameterType="map">
+        DELETE FROM tag_user
+        WHERE user_id = #{userId}
+        AND tag_code IN
+        <foreach collection="tagCodes" item="code" open="(" close=")" separator=",">
+            #{code}
+        </foreach>
+    </delete>
+
+    <!-- 删除用户所有标签 -->
+    <delete id="deleteAllUserTags">
+        DELETE FROM tag_user
+        WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 更新单个标签值 -->
+    <update id="updateUserTagValue">
+        UPDATE tag_user
+        SET tag_value = #{tagValue},
+            updated_time = NOW()
+        WHERE user_id = #{userId} AND tag_code = #{tagCode}
+    </update>
+
+    <!-- 根据标签代码查所有用户（复用 resultMap；保留倒序） -->
+    <select id="getUserTagsByTagCode" resultMap="TagUserMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tag_user
+        WHERE tag_code = #{tagCode}
+        ORDER BY updated_time DESC
+    </select>
+
+
+    <!-- 根据 tag_code + user_id 查询完整一条（结合 TagUserMap） -->
+    <select id="getOneByTagCodeAndUserId" resultMap="TagUserMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM tag_user
+        WHERE tag_code = #{tagCode}
+        AND user_id  = #{userId}
+        LIMIT 1
+    </select>
+
+
+
+</mapper>

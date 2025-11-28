@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: pulse-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: pulse
+      MYSQL_USER: pulse
+      MYSQL_PASSWORD: pulse123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - pulse-network
+
+  # Redis缓存
+  redis:
+    image: redis:6.2-alpine
+    container_name: pulse-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - pulse-network
+
+  # 管理服务
+  pulse-manager:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/Dockerfile
+    container_name: pulse-manager
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pulse?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+      SPRING_DATASOURCE_USERNAME: pulse
+      SPRING_DATASOURCE_PASSWORD: pulse123
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - pulse-network
+
+  # 应用服务
+  pulse-app:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/Dockerfile.app
+    container_name: pulse-app
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pulse?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
+      SPRING_DATASOURCE_USERNAME: pulse
+      SPRING_DATASOURCE_PASSWORD: pulse123
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - pulse-network
+
+  # Nginx负载均衡
+  nginx:
+    image: nginx:alpine
+    container_name: pulse-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - pulse-manager
+      - pulse-app
+    networks:
+      - pulse-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  pulse-network:
+    driver: bridge
