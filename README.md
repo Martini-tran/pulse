@@ -253,3 +253,7 @@ kubectl apply -f scripts/k8s/
 ## 联系方式
 
 如有问题或建议，欢迎提交 Issue 或 Pull Request。
+
+## 社区交流
+
+- **QQ 群**: 923901004
