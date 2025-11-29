@@ -237,9 +237,18 @@ kubectl apply -f scripts/k8s/
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 提交 Pull Request
 
+## 相关项目
+
+- **Pulse App (移动端)**: [https://github.com/Martini-tran/pulse-app.git](https://github.com/Martini-tran/pulse-app.git)
+
 ## 许可证
 
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 **非商业使用许可证** - 详见 [LICENSE](LICENSE) 文件
+
+**重要说明**:
+- 允许个人学习、研究使用
+- 禁止任何形式的商业用途
+- 如需商业授权，请联系版权持有人
 
 ## 联系方式
 
